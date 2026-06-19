@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 import os
+import re
+import sys
 from datetime import datetime, timedelta
 
 import pytz
 import yt_dlp
+import requests
 from lxml import etree
+from bs4 import BeautifulSoup
 
 tz = pytz.timezone('Europe/London')
 channels = []
@@ -72,61 +76,147 @@ def build_xml_tv(streams: list) -> bytes:
     return etree.tostring(data, pretty_print=True, encoding='utf-8')
 
 
+def extract_m3u8_from_page(url: str):
+    """
+    Metode alternatif: Ekstrak link M3U8 langsung dari halaman YouTube menggunakan requests dan BeautifulSoup
+    :param url: URL YouTube
+    :return: Link M3U8 atau None jika tidak ditemukan
+    """
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, seperti Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=15)
+        if response.status_code != 200:
+            return None
+        
+        # Cari link manifest.googlevideo.com dalam halaman
+        content = response.text
+        # Pola untuk mencari link HLS manifest
+        patterns = [
+            r'https://manifest\.googlevideo\.com/api/manifest/hls_variant/[^"\'\s<>]+\.m3u8',
+            r'https://[a-z0-9\-]+\.googlevideo\.com/videoplayback[^"\'\s<>]+\.m3u8',
+        ]
+        
+        for pattern in patterns:
+            matches = re.findall(pattern, content)
+            if matches:
+                # Ambil link pertama yang ditemukan
+                return matches[0]
+        
+        # Jika tidak ditemukan, coba cari di dalam script JSON
+        json_pattern = r'"hlsManifestUrl":"([^"]+\.m3u8)"'
+        json_matches = re.findall(json_pattern, content)
+        if json_matches:
+            # Escape karakter Unicode
+            return json_matches[0].replace('\\u0026', '&')
+        
+        return None
+    except Exception as e:
+        print(f"DEBUG: Error in extract_m3u8_from_page: {e}", file=sys.stderr)
+        return None
+
+
 def grab_with_ytdlp(url: str):
     """
-    Grabs the live-streaming URL using yt-dlp
+    Grab live-streaming URL using yt-dlp with multiple fallback methods
     :param url: The YouTube URL of the livestream
     """
-    ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
-        'extract_flat': False,
-        'format': 'bestvideo+bestaudio/best',
-        'ignoreerrors': True,
-    }
+    stream_url = None
+    stream_title = 'Live Stream'
+    stream_desc = 'No description'
+    stream_image_url = ''
     
+    # Method 1: Gunakan yt-dlp
     try:
+        ydl_opts = {
+            'quiet': True,
+            'no_warnings': True,
+            'extract_flat': False,
+            'format': 'bestvideo+bestaudio/best',
+            'ignoreerrors': True,
+            'headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, seperti Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+        }
+        
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             
-            if info is None:
-                raise Exception("No video information retrieved")
-            
-            stream_url = None
-            stream_title = info.get('title', 'Live Stream')
-            stream_desc = info.get('description', 'No description')
-            stream_image_url = info.get('thumbnail', '')
-            
-            # Cari format HLS (m3u8) terlebih dahulu
-            for fmt in info.get('formats', []):
-                if fmt.get('protocol') == 'm3u8_native' or '.m3u8' in fmt.get('url', ''):
-                    stream_url = fmt['url']
-                    break
-            
-            # Jika tidak ada format m3u8, ambil URL video langsung
-            if not stream_url:
-                stream_url = info.get('url')
-            
-            if not stream_url:
-                raise Exception("No stream URL found in any format")
-            
-            channels.append((channel_name, channel_id, category, stream_title, stream_desc, stream_image_url))
-            print(stream_url)
-            
+            if info:
+                stream_title = info.get('title', 'Live Stream')
+                stream_desc = info.get('description', 'No description')
+                stream_image_url = info.get('thumbnail', '')
+                
+                # Cari format HLS (m3u8) terlebih dahulu
+                for fmt in info.get('formats', []):
+                    if fmt.get('protocol') == 'm3u8_native' or '.m3u8' in fmt.get('url', ''):
+                        stream_url = fmt['url']
+                        break
+                
+                # Jika tidak ada format m3u8, ambil URL video langsung
+                if not stream_url:
+                    stream_url = info.get('url')
     except Exception as e:
-        # Log error untuk debugging (tidak muncul di output final)
-        import sys
-        print(f"ERROR: {e}", file=sys.stderr)
-        # Fallback: cetak link YouTube asli agar pemutar bisa mengambil langsung
-        print(url)
+        print(f"DEBUG: yt-dlp error: {e}", file=sys.stderr)
+    
+    # Method 2: Jika yt-dlp gagal, coba ekstrak dari halaman langsung
+    if not stream_url or '.m3u8' not in stream_url:
+        print(f"DEBUG: Trying fallback method for {url}", file=sys.stderr)
+        fallback_url = extract_m3u8_from_page(url)
+        if fallback_url:
+            stream_url = fallback_url
+            # Coba ambil judul dari halaman
+            try:
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+                resp = requests.get(url, headers=headers, timeout=10)
+                if resp.status_code == 200:
+                    soup = BeautifulSoup(resp.text, 'html.parser')
+                    title_tag = soup.find('meta', property='og:title')
+                    if title_tag:
+                        stream_title = title_tag.get('content', 'Live Stream')
+            except:
+                pass
+    
+    # Method 3: Fallback terakhir - berikan link YouTube asli
+    if not stream_url:
+        print(f"DEBUG: All methods failed, using YouTube URL as fallback", file=sys.stderr)
+        stream_url = url
+        # Ambil informasi dari halaman untuk data EPG
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            resp = requests.get(url, headers=headers, timeout=10)
+            if resp.status_code == 200:
+                soup = BeautifulSoup(resp.text, 'html.parser')
+                title_tag = soup.find('meta', property='og:title')
+                if title_tag:
+                    stream_title = title_tag.get('content', 'Live Stream')
+                desc_tag = soup.find('meta', property='og:description')
+                if desc_tag:
+                    stream_desc = desc_tag.get('content', 'No description')
+                image_tag = soup.find('meta', property='og:image')
+                if image_tag:
+                    stream_image_url = image_tag.get('content', '')
+        except:
+            pass
+    
+    # Simpan data channel
+    channels.append((channel_name, channel_id, category, stream_title, stream_desc, stream_image_url))
+    
+    # Cetak URL stream (ini yang akan masuk ke youtube.m3u8)
+    print(stream_url)
 
 
-# Variabel global untuk menyimpan data channel saat ini
+# Variabel global
 channel_name = ''
 channel_id = ''
 category = ''
 
-# Baca file youtubeLink.txt dan proses setiap baris
+# Baca file youtubeLink.txt
 with open('./youtubeLink.txt', encoding='utf-8') as f:
     print("#EXTM3U")
     for line in f:
@@ -134,23 +224,23 @@ with open('./youtubeLink.txt', encoding='utf-8') as f:
         if not line or line.startswith('##'):
             continue
         if not line.startswith('https:'):
-            # Parse baris info channel: Nama || ID || Kategori
             parts = line.split('||')
-            channel_name = parts[0].strip()
-            channel_id = parts[1].strip()
-            category = parts[2].strip().title()
-            print(
-                f'\n#EXTINF:-1 tvg-id="{channel_id}" tvg-name="{channel_name}" group-title="{category}", {channel_name}')
+            if len(parts) >= 3:
+                channel_name = parts[0].strip()
+                channel_id = parts[1].strip()
+                category = parts[2].strip().title()
+                print(
+                    f'\n#EXTINF:-1 tvg-id="{channel_id}" tvg-name="{channel_name}" group-title="{category}", {channel_name}')
         else:
-            # Proses link YouTube dengan yt-dlp
             grab_with_ytdlp(line)
 
-# Bangun file XMLTV berdasarkan data channel yang berhasil diambil
-channel_xml = build_xml_tv(channels)
-with open('epg.xml', 'wb') as f:
-    f.write(channel_xml)
+# Build XMLTV
+if channels:
+    channel_xml = build_xml_tv(channels)
+    with open('epg.xml', 'wb') as f:
+        f.write(channel_xml)
 
-# Bersihkan file temporary jika ada
+# Cleanup
 if 'temp.txt' in os.listdir():
     os.remove('temp.txt')
     for f in os.listdir():
