@@ -1,11 +1,10 @@
-#! /usr/bin/python3
+#!/usr/bin/env python3
 import os
 from datetime import datetime, timedelta
 
 import pytz
-import requests
+import yt_dlp
 from lxml import etree
-from bs4 import BeautifulSoup
 
 tz = pytz.timezone('Europe/London')
 channels = []
@@ -13,7 +12,7 @@ channels = []
 
 def generate_times(curr_dt: datetime):
     """
-Generate 3-hourly blocks of times based on a current date
+    Generate 3-hourly blocks of times based on a current date
     :param curr_dt: The current time the script is executed
     :return: A tuple that contains a list of start dates and a list of end dates
     """
@@ -37,7 +36,7 @@ Generate 3-hourly blocks of times based on a current date
 
 def build_xml_tv(streams: list) -> bytes:
     """
-Build an XMLTV file based on provided stream information
+    Build an XMLTV file based on provided stream information
     :param streams: List of tuples containing channel/stream name, ID and category
     :return: XML as bytes
     """
@@ -73,47 +72,61 @@ Build an XMLTV file based on provided stream information
     return etree.tostring(data, pretty_print=True, encoding='utf-8')
 
 
-def grab(url: str):
+def grab_with_ytdlp(url: str):
     """
-Grabs the live-streaming M3U8 file
+    Grabs the live-streaming URL using yt-dlp
     :param url: The YouTube URL of the livestream
     """
-    if '&' in url:
-        url = url.split('&')[0]
-
-    requests.packages.urllib3.disable_warnings()
-    stream_info = requests.get(url, timeout=15)
-    response = stream_info.text
-    soup = BeautifulSoup(stream_info.text, features="html.parser")
-
-
-    if '.m3u8' not in response or stream_info.status_code != 200:
-        print("https://www.youtube.com/watch?v=1oh9IEwBbFY")
-        return
-    end = response.find('.m3u8') + 5
-    tuner = 100
-    while True:
-        if 'https://' in response[end - tuner: end]:
-            link = response[end - tuner: end]
-            start = link.find('https://')
-            end = link.find('.m3u8') + 5
-
-            stream_title = soup.find("meta", property="og:title")["content"]
-            stream_desc = soup.find("meta", property="og:description")["content"]
-            stream_image_url = soup.find("meta", property="og:image")["content"]
+    ydl_opts = {
+        'quiet': True,
+        'no_warnings': True,
+        'extract_flat': False,
+        'format': 'bestvideo+bestaudio/best',
+        'ignoreerrors': True,
+    }
+    
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            
+            if info is None:
+                raise Exception("No video information retrieved")
+            
+            stream_url = None
+            stream_title = info.get('title', 'Live Stream')
+            stream_desc = info.get('description', 'No description')
+            stream_image_url = info.get('thumbnail', '')
+            
+            # Cari format HLS (m3u8) terlebih dahulu
+            for fmt in info.get('formats', []):
+                if fmt.get('protocol') == 'm3u8_native' or '.m3u8' in fmt.get('url', ''):
+                    stream_url = fmt['url']
+                    break
+            
+            # Jika tidak ada format m3u8, ambil URL video langsung
+            if not stream_url:
+                stream_url = info.get('url')
+            
+            if not stream_url:
+                raise Exception("No stream URL found in any format")
+            
             channels.append((channel_name, channel_id, category, stream_title, stream_desc, stream_image_url))
+            print(stream_url)
+            
+    except Exception as e:
+        # Log error untuk debugging (tidak muncul di output final)
+        import sys
+        print(f"ERROR: {e}", file=sys.stderr)
+        # Fallback: cetak link YouTube asli agar pemutar bisa mengambil langsung
+        print(url)
 
-            break
-        else:
-            tuner += 5
-    print(f"{link[start: end]}")
 
-
+# Variabel global untuk menyimpan data channel saat ini
 channel_name = ''
 channel_id = ''
 category = ''
 
-# Open text file and parse stream information and URL
+# Baca file youtubeLink.txt dan proses setiap baris
 with open('./youtubeLink.txt', encoding='utf-8') as f:
     print("#EXTM3U")
     for line in f:
@@ -121,22 +134,25 @@ with open('./youtubeLink.txt', encoding='utf-8') as f:
         if not line or line.startswith('##'):
             continue
         if not line.startswith('https:'):
-            line = line.split('||')
-            channel_name = line[0].strip()
-            channel_id = line[1].strip()
-            category = line[2].strip().title()
+            # Parse baris info channel: Nama || ID || Kategori
+            parts = line.split('||')
+            channel_name = parts[0].strip()
+            channel_id = parts[1].strip()
+            category = parts[2].strip().title()
             print(
                 f'\n#EXTINF:-1 tvg-id="{channel_id}" tvg-name="{channel_name}" group-title="{category}", {channel_name}')
         else:
-            grab(line)
+            # Proses link YouTube dengan yt-dlp
+            grab_with_ytdlp(line)
 
-# Time to build an XMLTV file based on stream data
+# Bangun file XMLTV berdasarkan data channel yang berhasil diambil
 channel_xml = build_xml_tv(channels)
 with open('epg.xml', 'wb') as f:
     f.write(channel_xml)
-    f.close()
 
-# Remove temp files from project dir
+# Bersihkan file temporary jika ada
 if 'temp.txt' in os.listdir():
-    os.system('rm temp.txt')
-    os.system('rm watch*')
+    os.remove('temp.txt')
+    for f in os.listdir():
+        if f.startswith('watch'):
+            os.remove(f)
