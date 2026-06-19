@@ -1,1 +1,45 @@
-<tv generator-info-name="youtube-live-epg" generator-info-url="https://github.com/dp247/YouTubeToM3U8"/>
+<tv generator-info-name="youtube-live-epg" generator-info-url="https://github.com/dp247/YouTubeToM3U8">
+  <channel id="iNews.yt">
+    <display-name lang="en">Official iNews</display-name>
+  </channel>
+  <programme channel="iNews.yt" start="20260619180000 +0100" stop="20260619210000 +0100">
+    <title lang="en">Live Stream</title>
+    <desc lang="en">No description</desc>
+    <icon src=""/>
+  </programme>
+  <programme channel="iNews.yt" start="20260619210000 +0100" stop="20260620000000 +0100">
+    <title lang="en">Live Stream</title>
+    <desc lang="en">No description</desc>
+    <icon src=""/>
+  </programme>
+  <programme channel="iNews.yt" start="20260620000000 +0100" stop="20260620030000 +0100">
+    <title lang="en">Live Stream</title>
+    <desc lang="en">No description</desc>
+    <icon src=""/>
+  </programme>
+  <programme channel="iNews.yt" start="20260620030000 +0100" stop="20260620060000 +0100">
+    <title lang="en">Live Stream</title>
+    <desc lang="en">No description</desc>
+    <icon src=""/>
+  </programme>
+  <programme channel="iNews.yt" start="20260620060000 +0100" stop="20260620090000 +0100">
+    <title lang="en">Live Stream</title>
+    <desc lang="en">No description</desc>
+    <icon src=""/>
+  </programme>
+  <programme channel="iNews.yt" start="20260620090000 +0100" stop="20260620120000 +0100">
+    <title lang="en">Live Stream</title>
+    <desc lang="en">No description</desc>
+    <icon src=""/>
+  </programme>
+  <programme channel="iNews.yt" start="20260620120000 +0100" stop="20260620150000 +0100">
+    <title lang="en">Live Stream</title>
+    <desc lang="en">No description</desc>
+    <icon src=""/>
+  </programme>
+  <programme channel="iNews.yt" start="20260620150000 +0100" stop="20260620180000 +0100">
+    <title lang="en">Live Stream</title>
+    <desc lang="en">No description</desc>
+    <icon src=""/>
+  </programme>
+</tv>
