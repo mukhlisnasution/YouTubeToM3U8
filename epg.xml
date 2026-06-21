@@ -2,16 +2,6 @@
   <channel id="iNews.yt">
     <display-name lang="en">Official iNews</display-name>
   </channel>
-  <programme channel="iNews.yt" start="20260621110000 +0100" stop="20260621140000 +0100">
-    <title lang="en">Live Stream</title>
-    <desc lang="en">No description</desc>
-    <icon src=""/>
-  </programme>
-  <programme channel="iNews.yt" start="20260621140000 +0100" stop="20260621170000 +0100">
-    <title lang="en">Live Stream</title>
-    <desc lang="en">No description</desc>
-    <icon src=""/>
-  </programme>
   <programme channel="iNews.yt" start="20260621170000 +0100" stop="20260621200000 +0100">
     <title lang="en">Live Stream</title>
     <desc lang="en">No description</desc>
@@ -38,6 +28,16 @@
     <icon src=""/>
   </programme>
   <programme channel="iNews.yt" start="20260622080000 +0100" stop="20260622110000 +0100">
+    <title lang="en">Live Stream</title>
+    <desc lang="en">No description</desc>
+    <icon src=""/>
+  </programme>
+  <programme channel="iNews.yt" start="20260622110000 +0100" stop="20260622140000 +0100">
+    <title lang="en">Live Stream</title>
+    <desc lang="en">No description</desc>
+    <icon src=""/>
+  </programme>
+  <programme channel="iNews.yt" start="20260622140000 +0100" stop="20260622170000 +0100">
     <title lang="en">Live Stream</title>
     <desc lang="en">No description</desc>
     <icon src=""/>
