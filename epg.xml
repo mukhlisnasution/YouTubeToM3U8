@@ -2,42 +2,42 @@
   <channel id="iNews.yt">
     <display-name lang="en">Official iNews</display-name>
   </channel>
-  <programme channel="iNews.yt" start="20260802210000 +0100" stop="20260803000000 +0100">
+  <programme channel="iNews.yt" start="20260803020000 +0100" stop="20260803050000 +0100">
     <title lang="en">Live Stream</title>
     <desc lang="en">No description</desc>
     <icon src=""/>
   </programme>
-  <programme channel="iNews.yt" start="20260803000000 +0100" stop="20260803030000 +0100">
+  <programme channel="iNews.yt" start="20260803050000 +0100" stop="20260803080000 +0100">
     <title lang="en">Live Stream</title>
     <desc lang="en">No description</desc>
     <icon src=""/>
   </programme>
-  <programme channel="iNews.yt" start="20260803030000 +0100" stop="20260803060000 +0100">
+  <programme channel="iNews.yt" start="20260803080000 +0100" stop="20260803110000 +0100">
     <title lang="en">Live Stream</title>
     <desc lang="en">No description</desc>
     <icon src=""/>
   </programme>
-  <programme channel="iNews.yt" start="20260803060000 +0100" stop="20260803090000 +0100">
+  <programme channel="iNews.yt" start="20260803110000 +0100" stop="20260803140000 +0100">
     <title lang="en">Live Stream</title>
     <desc lang="en">No description</desc>
     <icon src=""/>
   </programme>
-  <programme channel="iNews.yt" start="20260803090000 +0100" stop="20260803120000 +0100">
+  <programme channel="iNews.yt" start="20260803140000 +0100" stop="20260803170000 +0100">
     <title lang="en">Live Stream</title>
     <desc lang="en">No description</desc>
     <icon src=""/>
   </programme>
-  <programme channel="iNews.yt" start="20260803120000 +0100" stop="20260803150000 +0100">
+  <programme channel="iNews.yt" start="20260803170000 +0100" stop="20260803200000 +0100">
     <title lang="en">Live Stream</title>
     <desc lang="en">No description</desc>
     <icon src=""/>
   </programme>
-  <programme channel="iNews.yt" start="20260803150000 +0100" stop="20260803180000 +0100">
+  <programme channel="iNews.yt" start="20260803200000 +0100" stop="20260803230000 +0100">
     <title lang="en">Live Stream</title>
     <desc lang="en">No description</desc>
     <icon src=""/>
   </programme>
-  <programme channel="iNews.yt" start="20260803180000 +0100" stop="20260803210000 +0100">
+  <programme channel="iNews.yt" start="20260803230000 +0100" stop="20260804020000 +0100">
     <title lang="en">Live Stream</title>
     <desc lang="en">No description</desc>
     <icon src=""/>
